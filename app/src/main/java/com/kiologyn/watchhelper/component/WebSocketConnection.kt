@@ -4,7 +4,9 @@ import android.util.Log
 import io.ktor.client.*
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.client.plugins.websocket.ws
+import io.ktor.client.plugins.websocket.wss
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +18,7 @@ class WebSocketConnection(
     private var host: String,
     private var path: String,
     private var port: Int = 80,
+    private var secure: Boolean = false,
     private val pingInterval: Long = 5_000,
     var onMessage: (message: String) -> Unit,
     var onConnect: () -> Unit = {},
@@ -33,10 +36,7 @@ class WebSocketConnection(
     fun connect() {
         scope.launch {
             try {
-                client.webSocket(
-                    host = host,
-                    path = path,
-                ) {
+                val websocketHandler: suspend DefaultClientWebSocketSession.() -> Unit = {
                     onConnect()
                     session = this
                     runBlocking {
@@ -48,6 +48,21 @@ class WebSocketConnection(
                         }
                     }
                 }
+
+                if (secure)
+                    client.wss(
+                        host = host,
+                        port = port,
+                        path = path,
+                        block = websocketHandler,
+                    )
+                else
+                    client.ws(
+                        host = host,
+                        port = port,
+                        path = path,
+                        block = websocketHandler,
+                    )
             } catch (exception: Exception) {
                 Log.e("WS", exception.message.toString())
             } finally {

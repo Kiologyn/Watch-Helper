@@ -13,7 +13,9 @@ class RotaryPageViewModel : ViewModel() {
 
     private var wsConnection: WebSocketConnection = WebSocketConnection(
         host = Config.Scroll.HOST,
+        port = Config.Scroll.PORT,
         path = Config.Scroll.PATH,
+        secure = Config.Scroll.SECURE,
         onMessage = { message ->
             try {
                 value = message.toFloat()
